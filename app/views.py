@@ -4,6 +4,7 @@ import json
 import numpy as np
 import pandas as pd
 from sklearn.externals import joblib
+from sklearn.ensemble import ExtraTreesClassifier
 
 #importing model
 model = joblib.load('app/models/treatment_model.pkl')
@@ -38,7 +39,7 @@ def process_data(data):
 
         #encoding benefits------------------------------
         benefits = {'Yes' : 1,
-                    "Don't know" : 0.5, 
+                    'NA' : 0.5, 
                     'No' : 0, 
                     }
 
@@ -47,7 +48,7 @@ def process_data(data):
 
         #encoding care options---------------------------
         care = {'Yes' : 1,
-                "Not sure" : 0.5, 
+                'NA' : 0.5, 
                 'No' : 0, 
                 }
 
@@ -56,7 +57,7 @@ def process_data(data):
 
         #encoding anonymity-------------------------------
         anonymity = {'Yes' : 1,
-                    "Don't know" : 0.5, 
+                    'NA' : 0.5, 
                     'No' : 0, 
                     }
 
@@ -68,7 +69,7 @@ def process_data(data):
                 "Somewhat difficult" : 1, 
                 "Somewhat easy" : 2, 
                 "Very easy" : 3, 
-                "Don't know" : 1.5   
+                "NA" : 1.5   
                 }
 
         data['leave_ordinal'] = data.leave.map(leave)
@@ -76,7 +77,7 @@ def process_data(data):
 
         #encoding mental health consequences--------------
         mental = {'Yes' : 1,
-                "Maybe" : 0.5, 
+                "NA" : 0.5, 
                 'No' : 0, 
                 }
 
@@ -85,7 +86,7 @@ def process_data(data):
 
         #physical health interview-------------------------
         supervisor = {'Yes' : 1,
-                    'Some of them' : 0.5, 
+                    'NA' : 0.5, 
                     'No' : 0, 
                     }
 
@@ -94,7 +95,7 @@ def process_data(data):
 
         #encoding physical health interview-----------------
         phy = {'Yes' : 1,
-                "Maybe" : -1, 
+                "NA" : -1, 
                 'No' : 0, 
                 }
 
@@ -114,11 +115,11 @@ def process_data(data):
         data.drop(['no_employees'], axis = 1, inplace = True)
 
         #Encoding Gender
-        if(data.loc[0, 'Gender'].lower() == 'male'):
+        if(data.loc[0, 'Gender'] == 'male'):
             data['male'] = 1
             data['female'] = 0
 
-        elif(data[0, 'Gender'].lower() == 'female'):
+        elif(data[0, 'Gender'] == 'female'):
             data['male'] = 0
             data['female'] = 1
 
@@ -145,15 +146,14 @@ def home():
 def predict():
     
     data = request.get_json(force=True)
-    df = pd.DataFrame([data])
+    df = pd.DataFrame([json.loads(data)])
     flag, X = process_data(df)
     if flag:
         predict = model.predict(X)
         prob = model.predict_proba(X)
         predict_prob = [prob[0][0], prob[0][1]]
-        print(predict_prob)
         output = {'flag':1, 'predict' : str(predict[0]), 'prob': predict_prob}
         return json.dumps(output)
     else:
-        output = {'flag':0, 'error' : 'Something went wrong. Please try again'}
+        output = {'flag':0, 'error' : '{} error'.format(X)}
         return json.dumps(output)
